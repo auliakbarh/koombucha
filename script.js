@@ -68,15 +68,26 @@ const PRODUCTS = [
     }
 ];
 
+// REGISTERED PARTNERS
+const PARTNER_DISCOUNT = {
+    soesun: 0.40,
+    itoko: 0.30,
+};
+
 // Cart state
 let CART = [];
 let isPartner = false;
+let partnerDiscountRate = 0;
 
 // Check for partner parameter
 function checkPartnerStatus() {
     const urlParams = new URLSearchParams(window.location.search);
     const partner = urlParams.get('partner');
-    isPartner = partner === 'soesun';
+    const partnerDiscount = PARTNER_DISCOUNT[partner];
+    isPartner = partnerDiscount !== undefined;
+    if (isPartner) {
+        partnerDiscountRate = partnerDiscount;
+    }
 
     if (isPartner) {
         document.getElementById('partnerNotice').style.display = 'block';
@@ -85,7 +96,7 @@ function checkPartnerStatus() {
 
 // Calculate discounted price
 function getDiscountedPrice(originalPrice) {
-    return isPartner ? Math.round(originalPrice * 0.5882) : originalPrice; // 41.18% discount
+    return isPartner ? Math.round(originalPrice * (1 - partnerDiscountRate)) : originalPrice;
 }
 
 // Format currency
@@ -117,7 +128,7 @@ function renderProducts() {
                 <span class="product-price">${formatCurrency(discountedPrice)}</span>
                 ${hasDiscount ? `
                     <span class="product-original-price">${formatCurrency(originalPrice)}</span>
-                    <span class="product-discount">-41%</span>
+                    <span class="product-discount">-${partnerDiscountRate * 100}%</span>
                 ` : ''}
             </div>
             <button class="add-to-cart" onclick="addToCart(${product.id})">
@@ -231,8 +242,10 @@ function sendWhatsAppOrder() {
 
     const phoneNumber = '6285161831593';
     const total = CART.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const urlParams = new URLSearchParams(window.location.search);
+    const partner = urlParams.get('partner');
 
-    let message = `Halo! Saya ingin memesan kombucha:\n\n`;
+    let message = !!partner ? `Halo! Saya dari ${partner} ingin memesan kombucha:\n\n` : `Halo! Saya ingin memesan kombucha:\n\n`;
 
     CART.forEach(item => {
         message += `• ${item.name} x${item.quantity} = ${formatCurrency(item.price * item.quantity)}\n`;
